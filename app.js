@@ -28,7 +28,7 @@ function calculateGoalLimit(score) {
 }
 
 function isAfter65Minutes(status) {
-    if (status > 0 && status < 100) {
+    if (status > 65 && status < 90) {
         return true;
     }
     return false;
@@ -116,7 +116,7 @@ async function fetchLivescores() {
                     dangerousAttacks &&
                     (odds.odd_1 < 29 || odds.odd_2 < 20) &&
                     dangerousAttacks.home > 1 &&
-                    // liveOdds &&  // descomente se quiser exigir liveOdds também
+                    liveOdds &&  
                     isAfter65Minutes(match.event_status) &&
                     !notifiedMatches.has(match.event_key)
                 ) {
@@ -132,7 +132,7 @@ async function fetchLivescores() {
                         `⚔️ Ataques Perigosos: ${dangerousAttacks.home} x ${dangerousAttacks.away}\n` +
                         finalizacoesTexto +
                         `🕛 Tempo: ${match.event_status}\n` +
-                        // `*🤖 Entrar em OVER ${liveOdds?.handicap} GOLS*\n\n` +
+                         `*🤖 Entrar em OVER ${liveOdds?.handicap} GOLS*\n\n` +
                         `${link}`;
 
                     console.log(
