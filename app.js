@@ -2,7 +2,7 @@ const axios = require('axios');
 const TelegramBot = require('node-telegram-bot-api');
 
 const token = '6323285955:AAFYiFWnG0aLKmhxFD-orRu7KwmXhjJ7gUY';
-const chat_bot = '-1002576823211';
+const chat_bot = '-1002011266973';
 
 const API_KEY = 'c16ba32e0dd38a8ef4b4c90a570d380f0665716e4b214e3715a2448fce6d7656';
 const URL = `https://apiv2.allsportsapi.com/football/?met=Livescore&APIkey=${API_KEY}`;
@@ -28,7 +28,7 @@ function calculateGoalLimit(score) {
 }
 
 function isAfter65Minutes(status) {
-    if (status > 65 && status < 90) {
+    if (status >= 65 && status <= 77) {
         return true;
     }
     return false;
@@ -90,6 +90,20 @@ async function getLiveOdds(matchId, goalLimit) {
     }
 }
 
+function pressureHome(apHome, score){
+    const [homeGoals, awayGoals] = score.split(' - ').map(Number);
+    if(apHome>=80 && awayGoals>=homeGoals){
+        return true;
+    }
+}
+
+function pressureAway(apAway, score){
+    const [homeGoals, awayGoals] = score.split(' - ').map(Number);
+    if(apAway>=80 && homeGoals>=awayGoals){
+        return true;
+    }
+}
+
 async function fetchLivescores() {
     try {
         const response = await axios.get(URL);
@@ -114,8 +128,8 @@ async function fetchLivescores() {
                     odds &&
                     odds.odd_1 && odds.odd_2 &&
                     dangerousAttacks &&
-                    (odds.odd_1 < 29 || odds.odd_2 < 20) &&
-                    dangerousAttacks.home > 1 &&
+                    (odds.odd_1 <= 1.40 || odds.odd_2 <= 1.40) &&
+                    (pressureHome(dangerousAttacks.home, match.event_final_result) || pressureAway(dangerousAttacks.away, match.event_final_result)) &&
                     liveOdds &&  
                     isAfter65Minutes(match.event_status) &&
                     !notifiedMatches.has(match.event_key)
@@ -128,18 +142,19 @@ async function fetchLivescores() {
                     const mensagem =
                         `*🤖 BETSMART*\n\n` +
                         `${match.event_home_team} vs ${match.event_away_team}\n\n` +
+                        `🏟 Competição: ${match.league_name}\n`+
                         `⚽️ Placar: ${match.event_final_result}\n` +
                         `⚔️ Ataques Perigosos: ${dangerousAttacks.home} x ${dangerousAttacks.away}\n` +
                         finalizacoesTexto +
                         `🕛 Tempo: ${match.event_status}\n` +
-                         `*🤖 Entrar em OVER ${liveOdds?.handicap} GOLS*\n\n` +
+                        `\n*🤖 Entrar em OVER ${liveOdds?.handicap} GOLS*\n\n` +
                         `${link}`;
 
-                    console.log(
-                        `${match.event_key}\n` +
-                        `${match.event_home_team} ${match.event_final_result} ${match.event_away_team} - ${match.event_status}\n` +
-                        `Ataques Perigosos: ${dangerousAttacks.home} | ${dangerousAttacks.away}\n`
-                    );
+                    // console.log(
+                    //     `${match.event_key}\n` +
+                    //     `${match.event_home_team} ${match.event_final_result} ${match.event_away_team} - ${match.event_status}\n` +
+                    //     `Ataques Perigosos: ${dangerousAttacks.home} | ${dangerousAttacks.away}\n`
+                    // );
 
                     await enviarMensagemTelegram(chat_bot, mensagem);
                     notifiedMatches.add(match.event_key);
@@ -154,4 +169,4 @@ async function fetchLivescores() {
 }
 
 fetchLivescores();
-setInterval(fetchLivescores, 60000); // Executa a cada 60 segundos
+setInterval(fetchLivescores, 60000);
